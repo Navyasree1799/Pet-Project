@@ -1,22 +1,35 @@
-import React, { useRef, useState } from "react";
-import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
-import { Button } from "@rneui/themed";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { signOut } from "firebase/auth";
-
-import { auth, firestore } from "../../config/firebase";
+import { auth } from "../../config/firebase";
 import { useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
 import useAuth from "../utils/hooks/useAuth";
+import { getCollectionData } from "../utils/firebaseFunctions";
+import NewUser from "../components/NewUser";
+import Task from "../components/Task";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function HomeScreen({ navigation, route }) {
   const [userData, setUserData] = useState({});
+  const [refresh, setRefresh] = useState(false);
+  const [todaysActivities, setTodaysActivities] = useState();
+  const { retrieveData, updateUser, isLoading } = useAuth();
 
-  const { retrieveData, updateUser, logout, isLoading } = useAuth();
-  useEffect(() => {
-    initialCall();
-  }, [route]);
+  // useEffect(() => {
+  //   initialCall();
+  // }, [route]);
 
-
+  useFocusEffect(
+    React.useCallback(() => {
+      initialCall();
+    }, [route])
+  );
 
   async function initialCall() {
     const user = await retrieveData();
@@ -24,71 +37,100 @@ export default function HomeScreen({ navigation, route }) {
     getData(user);
     if (!user?.hasOwnProperty("email")) {
       signOut(auth);
-    } else if (userData.hasOwnProperty("profileCreated") === false) {
+    } else if (user.hasOwnProperty("profileCreated") === false) {
+    } else if (user.hasOwnProperty("profileCreated") === true) {
+      const categoriesData = await getCollectionData("categories", user);
+      getTasksByDate(categoriesData);
+      setRefresh(!refresh);
     }
+    
   }
 
   async function getData(user) {
-    try {
-      const docRef = doc(firestore, "profiles", user.email);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-
-        setUserData(docSnap.data());
-        updateUser(docSnap.data());
-      } else {
-        console.log("No such document!");
-      }
-    } catch (err) {
-      console.log(err);
-    }
+    const profileData = await getCollectionData("profiles", user);
+    setUserData(profileData);
+    updateUser(profileData);
   }
 
+  function getTasksByDate(userActivities) {
+    const now = new Date().toDateTimeString();
 
-  
+    const flattenedData = Object.values(userActivities).flatMap(
+      (activity) => activity.tasks || []
+    );
+
+    const filteredData = flattenedData.filter((task) => {
+      console.log(new Date(task.date).toDateTimeString(), now);
+      if (task.frequency === "Daily") {
+        return true
+      } else if (task.frequency === "Specific Date") {
+        return new Date(task.time).toDateTimeString() === now;
+      }
+    })
+
+    // const filteredData = flattenedData.filter((task) => {
+    //   const taskDate = new Date(task.date);
+    //   return (
+    //     taskDate === now ||
+    //     task.frequency === "Daily" ||
+    //     (task.frequency === "Monthly" &&
+    //       taskDate.getDate() === sd.getDate() &&
+    //       taskDate.getMonth() === sd.getMonth())
+    //   );
+    // });
+    const sortedData = filteredData.sort(
+      (a, b) => new Date(a.time) - new Date(b.time)
+    );
+
+    console.log("Sorted Screen: ",sortedData)
+    setTodaysActivities(sortedData);
+  }
 
   if (isLoading) {
     return <ActivityIndicator />;
   } else if (userData?.hasOwnProperty("profileCreated") === false) {
-    return (
-      <View style={styles.container}>
-        <Image
-          style={styles.imageContainer}
-          source={require("../../assets/puppy.png")}
-        />
-        <Text style={styles.title}>
-          Welcome {"\n"}
-          {userData?.userName}!
-        </Text>
-
-        <Button
-          buttonStyle={{
-            backgroundColor: "#3095ea",
-            borderWidth: 2,
-            borderColor: "white",
-            borderRadius: 30,
-          }}
-          containerStyle={styles.buttonContainer}
-          titleStyle={{ fontWeight: "bold" }}
-          title="Create your profile"
-          onPress={() => navigation.navigate("ProfileCreation")}
-        />
-      </View>
-    );
+    return <NewUser userName={userData?.userName} />;
   } else {
     return (
       <View style={styles.container}>
-        <Text>Welcome {userData?.userName}!</Text>
-        
-        <Button
-          title="Sign Out"
-          style={styles.button}
-          onPress={() => {
-            signOut(auth);
-            logout();
-            navigation.navigate("Welcome");
-          }}
-        />
+        <Text style={styles.title}>Hi {userData?.userName}!</Text>
+
+        <View style={styles.activitiesContainer}>
+          <Text style={styles.subTitle}>Todays Tasks</Text>
+          {todaysActivities?.length > 0&&refresh && (
+            <FlatList
+              contentContainerStyle={{ display: "flex", alignItems: "center" }}
+              data={todaysActivities}
+              renderItem={({ item }) => (
+                <Task
+                  key={item.createdOn}
+                  obj={item}
+                  handlePress={() => {}}
+                  hideDelete={true}
+                />
+              )}
+              keyExtractor={(item) => item.notificationId}
+            />
+          )}
+          {todaysActivities?.length > 0&&!refresh && (
+            <FlatList
+              contentContainerStyle={{ display: "flex", alignItems: "center" }}
+              data={todaysActivities}
+              renderItem={({ item }) => (
+                <Task
+                  key={item.createdOn}
+                  obj={item}
+                  handlePress={() => {}}
+                  hideDelete={true}
+                />
+              )}
+              keyExtractor={(item) => item.notificationId}
+            />
+          )}
+          {!todaysActivities?.length && (
+            <Text style={styles.dateText}>No Activities Found today</Text>
+          )}
+        </View>
       </View>
     );
   }
@@ -97,9 +139,9 @@ export default function HomeScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 15,
     backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
   },
   button: {
     marginTop: 10,
@@ -112,8 +154,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    textAlign: "center",
     paddingHorizontal: 10,
+    backgroundColor: "lightgrey",
+    borderRadius: 5,
+    padding: 20,
+    color: "white",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  subTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
   buttonContainer: {
     width: "100%",

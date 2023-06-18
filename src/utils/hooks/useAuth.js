@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signOut } from "firebase/auth";
+import * as Notifications from "expo-notifications";
+import { auth } from "../../../config/firebase";
 
 const useAuth = (key = "user-data") => {
   const [user, setUser] = useState(null);
@@ -35,9 +38,12 @@ const useAuth = (key = "user-data") => {
     try {
       await AsyncStorage.removeItem(key);
       setUser(null);
+      
     } catch (error) {
       console.error("Error removing user data:", error);
     }
+    signOut(auth);
+    Notifications.cancelAllScheduledNotificationsAsync()
   };
 
   const updateUser = async (updatedData) => {
@@ -57,7 +63,6 @@ const useAuth = (key = "user-data") => {
   const retrieveData = async () => {
     try {
       const data = await AsyncStorage.getItem(key);
-      console.log("Retrieve Data: ", data);
       return JSON.parse(data);
     } catch (error) {
       console.error("Error retrieving data:", error);

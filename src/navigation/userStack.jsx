@@ -17,6 +17,9 @@ export default function UserStack() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: true,
+        tabBarStyle: { borderRadius: 30, height: 70, paddingVertical: 10 },
+        // title:"",
+        tabBarLabel: "",
         activeTintColor: "blue", // Customize the active tab color
         inactiveTintColor: "gray", // Customize the inactive tab color
         tabBarIcon: ({ focused, color, size }) => {
@@ -38,9 +41,21 @@ export default function UserStack() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Tasks" component={ServicesScreen} />
-      <Tab.Screen name="Appointments" component={Appointments} />
-      <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+      <Tab.Screen
+        options={{ title: "Categories" }}
+        name="Tasks"
+        component={ServicesScreen}
+      />
+      <Tab.Screen
+        options={{ title: "Calendar" }}
+        name="Appointments"
+        component={Appointments}
+      />
+      <Stack.Screen
+        options={{ title: "Profile" }}
+        name="SettingsScreen"
+        component={SettingsScreen}
+      />
     </Tab.Navigator>
   );
 }

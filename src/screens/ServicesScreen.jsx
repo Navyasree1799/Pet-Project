@@ -1,16 +1,13 @@
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { Button, Input, ListItem, Overlay } from "@rneui/themed";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
-import React, { useEffect } from "react";
-import { useState } from "react";
-import { StyleSheet, View, Text, Dimensions } from "react-native";
-import { firestore } from "../../config/firebase";
+import React, { useState,useEffect } from "react";
+import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
 import useAuth from "../utils/hooks/useAuth";
-
-const screenWidth = Dimensions.get("window").width;
+import { getCollectionData, setCollectionData } from "../utils/firebaseFunctions";
+import { screenWidth } from "../utils/helpfulFunctions";
 
 const ServiceScreen = ({ navigation }) => {
-
+  const [userData,setUserData] = useState()
   const [list, setList] = useState({
     food: {
       title: "Food",
@@ -25,7 +22,6 @@ const ServiceScreen = ({ navigation }) => {
   });
   const [visible, setVisible] = useState(false);
   const [newCategory,setNewCategory] = useState("")
-  const [userData, setUserData] = useState();
   const { retrieveData } = useAuth();
 
   useEffect(() => {
@@ -35,24 +31,14 @@ const ServiceScreen = ({ navigation }) => {
   async function getCategories(user) {
     try {
       user = await retrieveData();
-      console.log("User: ", user);
-      const docRef = doc(firestore, "categories", user.email);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        console.log("Document data:", docSnap.data());
-        setList(docSnap.data());
-      } else {
-        console.log("No Document Found");
-        setCategories(user.email, list);
-      }
+      setUserData(user)
+      const categoriesData = await getCollectionData("categories", user)
+      categoriesData
+        ? setList(categoriesData)
+        : setCollectionData("categories", user, list);
     } catch (err) {
       console.log(err);
     }
-  }
-
-  async function setCategories(email, obj) {
-    const categoryRef = collection(firestore, "categories");
-    await setDoc(doc(categoryRef, email), obj);
   }
 
   const toggleOverlay = () => {
@@ -60,18 +46,25 @@ const ServiceScreen = ({ navigation }) => {
   };
 
 
-  const handleSubmit = () => {
+  const handleCreate = async() => {
+    setVisible(false)
+    const user = await retrieveData();
     let updatedCategories = list
     updatedCategories = {
       ...list,
       [newCategory]: {
-        title: "newCategory",
+        title: newCategory,
         tasks: [],
         icon: "settings",
       },
     };
+    setCollectionData("categories", user, updatedCategories);
+    setList(updatedCategories)
   }
 
+ if (userData?.hasOwnProperty("profileCreated") === false) {
+    return <NewUser userName={userData?.userName} />
+  }
   return (
     <View style={styles.container}>
       <View style={styles.listView}>
@@ -79,9 +72,9 @@ const ServiceScreen = ({ navigation }) => {
           <ListItem
             key={i}
             bottomDivider
-            onPress={() =>
-              navigation.navigate("Task Manager", { category: item, list })
-            }
+            onPress={() => {
+             navigation.navigate("Task Manager", { category: item, list }); 
+            }}
           >
             <MaterialIcons name={item.icon} size={24} color="black" />
             <ListItem.Content>
@@ -92,7 +85,7 @@ const ServiceScreen = ({ navigation }) => {
         ))}
       </View>
       <View style={{ display: "flex", alignItems: "center", marginTop: 20 }}>
-        <Text style={styles.title}>Add New Category</Text>
+        <Text style={styles.title}>Create new category</Text>
         <AntDesign
           name="pluscircle"
           size={26}
@@ -112,7 +105,7 @@ const ServiceScreen = ({ navigation }) => {
             containerStyle={styles.buttonContainer}
             titleStyle={styles.buttonTitleStyle}
             title="Create"
-            onPress={handleSubmit}
+            onPress={handleCreate}
           />
         </View>
       </Overlay>
@@ -124,7 +117,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    // justifyContent: "center",
     backgroundColor: "#fff",
   },
   logo: {

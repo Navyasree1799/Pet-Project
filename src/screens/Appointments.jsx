@@ -1,19 +1,19 @@
 import React from "react";
-import { StyleSheet, View, Text, Image, FlatList } from "react-native";
+import { StyleSheet, View, Text, FlatList } from "react-native";
 import { screenWidth } from "../utils/helpfulFunctions";
 import { Calendar } from "react-native-calendars";
 import { useEffect } from "react";
 import { useState } from "react";
 import Task from "../components/Task";
-import { doc, getDoc } from "firebase/firestore";
 import useAuth from "../utils/hooks/useAuth";
-import { firestore } from "../../config/firebase";
+import { getCollectionData } from "../utils/firebaseFunctions";
+import { useFocusEffect } from "@react-navigation/native";
 const Appointments = () => {
-  const {retrieveData} = useAuth()
+  const { retrieveData } = useAuth()
+  const [refresh,setToggle] = useState(false)
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-
   const [activitiesForSelectedDate, setActivitiesForSelectedDate] = useState();
   const [activities, setActivities] = useState();
   const [markedDate, setMarkedDate] = useState({
@@ -21,55 +21,43 @@ const Appointments = () => {
       selected: true,
     },
   });
-  useEffect(() => {
-    getData()
-  }, []);
+  // useEffect(() => {
+  //   getData()
+  // }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getData()
+      setMarkedDate({
+        [new Date().toISOString().split("T")[0]]: {
+          selected: true,
+        },
+      });
+    }, [])
+  );
 
    async function getData() {
      try {
-      const user = await retrieveData();
-       const docRef = doc(firestore, "categories", user.email);
-       const docSnap = await getDoc(docRef);
-       if (docSnap.exists()) {
-         console.log("getData funciton ************: ",docSnap.data())
-        
-         setActivities(docSnap.data());
-       } else {
-         console.log("No such document!");
-       }
+       const user = await retrieveData();
+       const categoriesData = await getCollectionData("categories", user)
+       categoriesData && setActivities(categoriesData);
+       getTasksByDate(new Date(),categoriesData)
+
      } catch (err) {
        console.log(err);
      }
    }
 
   const onDayPress = (day) => {
-    setSelectedDate(day.dateString);
+    let sd = new Date(day.dateString);
+    sd = sd.setDate(sd.getDate() + 1);
+    sd = new Date(sd).toDateString();
+    setSelectedDate(sd);
     const defaultMarkedDate = {
       [day.dateString]: {
         selected: true,
       },
     };
-
-    let sd = new Date(day.dateString);
-    sd = sd.setDate(sd.getDate() + 1);
-    sd = new Date(sd).toDateString();
-
-    console.log(sd);
-    const flattenedData = Object.values(activities).flatMap(
-      (activity) => activity.tasks || []
-    );
-    //  console.log(flattenedData)
-    const temp = flattenedData.filter((task) => {
-      console.log(new Date(task.date).toDateString(), sd);
-      return new Date(task.date).toDateString() === sd;
-    });
-
-    const sortedData = flattenedData.sort(
-      (a, b) => new Date(a.time) - new Date(b.time)
-    );
-
-    setActivitiesForSelectedDate(sortedData);
-
     let markedDates = defaultMarkedDate;
     Object.values(activities).forEach((activity) => {
       activity.tasks.forEach((task) => {
@@ -81,15 +69,53 @@ const Appointments = () => {
     });
     console.log("marked Dates: ",markedDates)
     setMarkedDate(markedDates);
+
+    getTasksByDate(day.dateString)
+
   };
 
-  console.log("activitiesForSelectedDate: ",activitiesForSelectedDate);
+
+  function getTasksByDate(date,userActivities = activities) {
+       let sd = new Date(date);
+       sd = sd.setDate(sd.getDate() + 1);
+       sd = new Date(sd).toDateString();
+       const flattenedData = Object.values(userActivities).flatMap(
+         (activity) => activity.tasks || []
+    );
+    console.log(sd)
+
+      //  const filteredData = flattenedData.filter((task) => {
+      //    const taskDate = new Date(task.date);
+      //    console.log(taskDate)
+      //    return (
+      //      taskDate === sd ||
+      //      task.frequency === "Daily" ||
+      //      (task.frequency === "Monthly" &&
+      //        taskDate.getDate() === sd.getDate() &&
+      //        taskDate.getMonth() === sd.getMonth())
+      //    );
+      //  });
+     const filteredData = flattenedData.filter((task) => {
+       console.log(new Date(task.date).toDateString(), sd);
+       if (task.frequency === "Daily") {
+         return true
+       } else if (task.frequency === "Specific Date") {
+          return new Date(task.date).toDateString() === sd;
+       }
+       
+     });
+       const sortedData = filteredData.sort(
+         (a, b) => new Date(a.time) - new Date(b.time)
+       );
+       setActivitiesForSelectedDate(sortedData);
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.calendarContainer}>
         <Calendar markedDates={markedDate} onDayPress={onDayPress} />
         <View style={styles.activitiesContainer}>
+          <Text style={styles.subtitle}>Activities on {new Date(selectedDate).toLocaleDateString()}</Text>
           {activitiesForSelectedDate?.length>0 ? (
             <FlatList
               data={activitiesForSelectedDate}
@@ -133,7 +159,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "#888",
+    fontWeight: "bold",
+    marginBottom: 10,
   },
   calendarContainer: {
     flex: 1,

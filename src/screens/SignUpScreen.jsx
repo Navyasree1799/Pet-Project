@@ -51,7 +51,7 @@ const SignUpScreen = ({ navigation }) => {
 
       const profilesRef = collection(firestore, "profiles");
 
-      await setDoc(doc(profilesRef, value.email), data);
+      await setDoc(doc(profilesRef, value.email.toLocaleLowerCase()), data);
       
       login(data);
       navigation.navigate("ProfileCreation");

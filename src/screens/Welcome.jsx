@@ -14,7 +14,7 @@ const WelcomeScreen = ({ navigation }) => {
 
   async function getUserInfo() {
     const user = await retrieveData();
-    console.log("Welcome Screen: ", user);
+    // console.log("Welcome Screen: ", user);
     user && navigation.navigate("User Stack", { screen: "Home" });
   }
 

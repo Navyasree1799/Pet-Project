@@ -6,7 +6,6 @@ import {
   StyleSheet,
   View,
   Text,
-  Dimensions,
   ScrollView,
   Platform,
 } from "react-native";
@@ -15,11 +14,11 @@ import { scheduleNotification } from "../utils/notifications/scheduleNotificatio
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { useRef } from "react";
-import { firestore } from "../../config/firebase";
-import { collection, doc, setDoc } from "firebase/firestore";
 import useAuth from "../utils/hooks/useAuth";
 import alert from "../utils/alert";
 import Task from "../components/Task";
+import { setCollectionData } from "../utils/firebaseFunctions";
+import { screenWidth } from "../utils/helpfulFunctions";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -64,7 +63,6 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
-const screenWidth = Dimensions.get("window").width;
 const TaskManager = ({ route }) => {
   const { retrieveData } = useAuth();
   const [toggleRender, setToggleRender] = useState(true);
@@ -114,15 +112,17 @@ const TaskManager = ({ route }) => {
   }, []);
 
   function onChangeTime(t) {
-    if (
-      taskObj.frequency === "Specific Date" &&
-      new Date() > new Date(t.nativeEvent.timestamp)
-    ) {
-      alert("Please Change you Input", "Time Cannot be less than current time");
-    } else {
-      setShowTimePicker(false);
-      setTaskObj({ ...taskObj, time: t.nativeEvent.timestamp });
-    }
+    // if (
+    //   taskObj.frequency !== "Specific Date" &&
+    //   new Date() > new Date(t.nativeEvent.timestamp)
+    // ) {
+    //   alert("Please Change you Input", "Time Cannot be less than current time");
+    // } else {
+      
+    // }
+
+    setShowTimePicker(false);
+    setTaskObj({ ...taskObj, time: t.nativeEvent.timestamp });
   }
 
   function onChangeDate(t) {
@@ -134,6 +134,7 @@ const TaskManager = ({ route }) => {
     setIsVisible(false);
     const notificationId = await scheduleNotification(taskObj);
     let categoryObj = categoryList;
+    console.log(categoryList)
     categoryObj[task.title.toLowerCase()].tasks.push({
       ...taskObj,
       createdOn: new Date(),
@@ -141,44 +142,14 @@ const TaskManager = ({ route }) => {
       date: taskObj.frequency !== "Daily"?taskObj.date:Date.now()
     });
     console.log(categoryObj);
-    setCategories(categoryObj);
+     const user = await retrieveData();
+    const res = await setCollectionData("categories", user, categoryObj);
+    if (res) {
+      setTask(categoryObj[task.title.toLowerCase()]);
+      setToggleRender(!toggleRender);
+      setCategoryList(categoryObj);
+    }
   }
-
-  async function setCategories(obj) {
-    const user = await retrieveData();
-    const categoryRef = collection(firestore, "categories");
-    await setDoc(doc(categoryRef, user.email), obj)
-      .then((res) => {
-        console.log(res);
-        setTask(obj[task.title.toLowerCase()]);
-        setToggleRender(!toggleRender);
-        setCategoryList(obj);
-      })
-      .catch((err) => console.log(err));
-  }
-
-  useEffect(() => {
-    registerForPushNotificationsAsync().then((token) =>
-      setExpoPushToken(token)
-    );
-
-    notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
-        setNotification(notification);
-      });
-
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
-      });
-
-    return () => {
-      Notifications.removeNotificationSubscription(
-        notificationListener.current
-      );
-      Notifications.removeNotificationSubscription(responseListener.current);
-    };
-  }, []);
 
   function handlePress(task) {
     setTaskObj(task);

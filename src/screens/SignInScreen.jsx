@@ -76,8 +76,6 @@ const SignInScreen = ({ navigation }) => {
         <Button
           buttonStyle={{
             backgroundColor: "black",
-            borderWidth: 2,
-            borderColor: "white",
             borderRadius: 30,
           }}
           containerStyle={styles.buttonContainer}
@@ -89,8 +87,6 @@ const SignInScreen = ({ navigation }) => {
         <Button
           buttonStyle={{
             backgroundColor: "rgba(111, 202, 186, 1)",
-            borderWidth: 2,
-            borderColor: "white",
             borderRadius: 30,
           }}
           containerStyle={styles.buttonContainer}
