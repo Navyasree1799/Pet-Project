@@ -1,4 +1,4 @@
-import { Button, Card, Icon, Input,Slider } from "@rneui/themed";
+import { Button, Card, Icon, Input, Slider } from "@rneui/themed";
 import { useState } from "react";
 import {
   View,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Keyboard,
 } from "react-native";
 import dog from "../../assets/dog.png";
 import cat from "../../assets/cat.png";
@@ -28,6 +29,7 @@ const ProfileCreation = ({ navigation }) => {
     age: "10",
     gender: "",
     avatar: "",
+    petType: "",
   });
   const [user, setUser] = useState();
   const { retrieveData } = useAuth();
@@ -46,8 +48,11 @@ const ProfileCreation = ({ navigation }) => {
   async function getuserData() {
     const user = await retrieveData();
     setUser(user);
+    updateBreeds('dog');
+  }
 
-    const breeds = await getBreeds(user.petType);
+  async function updateBreeds(animal) {
+    const breeds = await getBreeds(animal);
     const temp = breeds.map((breed) => ({
       label: breed.name,
       value: breed.name,
@@ -83,6 +88,7 @@ const ProfileCreation = ({ navigation }) => {
             title="Dog"
             onPress={() => {
               setPet({ ...pet, petType: "dog" });
+              updateBreeds("dog");
               goToNextStep();
             }}
             selected={pet.petType}
@@ -91,6 +97,7 @@ const ProfileCreation = ({ navigation }) => {
             title="Cat"
             onPress={() => {
               setPet({ ...pet, petType: "cat" });
+              updateBreeds("cat");
               goToNextStep();
             }}
             selected={pet.petType}
@@ -107,7 +114,7 @@ const ProfileCreation = ({ navigation }) => {
           <Text style={styles.title}>Create Pet Profile</Text>
           <AvatarPicker avatar={pet.avatar} setAvatar={handleSetAvatar} />
         </View>
-        <Text style={styles.label}>Name</Text>
+        <Text style={styles.label}>Pet Name</Text>
         <TextInput
           style={styles.input}
           value={pet.name}
@@ -116,7 +123,7 @@ const ProfileCreation = ({ navigation }) => {
           selectionColor={"#5188E3"}
           placeholderTextColor="#B7B7B7"
         />
-        <Text style={styles.label}>Age</Text>
+        <Text style={styles.label}>Pet Age</Text>
         <View style={styles.dropdownContainer}>
           <Slider
             value={pet.age}
@@ -154,12 +161,14 @@ const ProfileCreation = ({ navigation }) => {
             style={styles.dropdown}
             open={open}
             items={breedList}
-            setOpen={setOpen}
+            setOpen={(v) => {
+              Keyboard.dismiss();
+              setOpen(v);
+            }}
             value={pet.breed}
             setValue={(callback) => {
-              setPet((pet) => ({ ...pet, breed: callback(pet.breed) }))
-            }
-            }
+              setPet((pet) => ({ ...pet, breed: callback(pet.breed) }));
+            }}
             setItems={setBreedList}
             placeholder="Select breed"
             placeholderStyle={styles.placeholderStyles}
@@ -176,7 +185,7 @@ const ProfileCreation = ({ navigation }) => {
             }}
           />
         </View>
-        <Text style={styles.label}>Gender</Text>
+        <Text style={styles.label}>Pet Gender</Text>
         <View style={styles.dropdownContainer}>
           <DropDownPicker
             style={styles.dropdown}
@@ -187,7 +196,10 @@ const ProfileCreation = ({ navigation }) => {
               setPet((pet) => ({ ...pet, gender: callback(pet.gender) }))
             }
             items={genderList}
-            setOpen={setGenderOpen}
+            setOpen={(v) => {
+              Keyboard.dismiss();
+              setGenderOpen(v);
+            }}
             setItems={setGenderList}
             placeholder="Select Pet Gender"
             placeholderStyle={styles.placeholderStyles}
@@ -216,11 +228,7 @@ const ProfileCreation = ({ navigation }) => {
   };
 
   function validateProfileForm() {
-    return (
-      pet.name.length > 0 &&
-      pet.breed.length > 0 &&
-      pet.gender.length > 0
-    );
+    return pet.name.length > 0 && pet.breed.length > 0 && pet.gender.length > 0;
   }
 
   function handleSetAvatar(blob) {
@@ -275,7 +283,7 @@ const ProfileCreation = ({ navigation }) => {
     const profilesRef = collection(firestore, "profiles");
 
     try {
-      await setDoc(doc(profilesRef, user.email), {
+      await setDoc(doc(profilesRef, user.email.toLowerCase()), {
         ...petData,
         email: user.email,
         id: user.uid,
@@ -363,6 +371,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   label: {
+    fontWeight: "bold",
     marginBottom: 7,
     marginStart: 10,
   },

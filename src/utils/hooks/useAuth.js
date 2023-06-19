@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { signOut } from "firebase/auth";
+import { deleteUser, getAuth, signOut } from "firebase/auth";
 import * as Notifications from "expo-notifications";
-import { auth } from "../../../config/firebase";
+import { auth, firestore } from "../../../config/firebase";
+import { deleteDoc, doc } from "firebase/firestore";
 
 const useAuth = (key = "user-data") => {
   const [user, setUser] = useState(null);
@@ -69,7 +70,14 @@ const useAuth = (key = "user-data") => {
     }
   };
 
-  return { user, isLoading, login, logout, updateUser, retrieveData };
+  return {
+    user,
+    isLoading,
+    login,
+    logout,
+    updateUser,
+    retrieveData,
+  };
 };
 
 export default useAuth;

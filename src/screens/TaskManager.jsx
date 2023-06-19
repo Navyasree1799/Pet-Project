@@ -1,4 +1,4 @@
-import {  MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import { Button, ButtonGroup, Input, FAB, BottomSheet } from "@rneui/themed";
 import React, { useEffect, useState } from "react";
@@ -8,6 +8,9 @@ import {
   Text,
   ScrollView,
   Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  KeyboardAvoidingView,
 } from "react-native";
 import { formatDate, formatTime } from "../utils/formatDate";
 import { scheduleNotification } from "../utils/notifications/scheduleNotifications";
@@ -18,7 +21,8 @@ import useAuth from "../utils/hooks/useAuth";
 import alert from "../utils/alert";
 import Task from "../components/Task";
 import { setCollectionData } from "../utils/firebaseFunctions";
-import { screenWidth } from "../utils/helpfulFunctions";
+import { screenHeight, screenWidth, validateObj } from "../utils/helpfulFunctions";
+import DatePicker from "../components/DatePicker";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -71,6 +75,7 @@ const TaskManager = ({ route }) => {
   const [task, setTask] = useState(route.params.category);
   const [isVisible, setIsVisible] = useState(false);
   const [date, setDate] = useState(new Date());
+  const [update,setUpdate] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const frequencyList = ["Daily", "Monthly", "Specific Date"];
@@ -118,8 +123,10 @@ const TaskManager = ({ route }) => {
     // ) {
     //   alert("Please Change you Input", "Time Cannot be less than current time");
     // } else {
-      
+
     // }
+
+    console.log("OnchangeTime: ",t)
 
     setShowTimePicker(false);
     setTaskObj({ ...taskObj, time: t.nativeEvent.timestamp });
@@ -132,18 +139,16 @@ const TaskManager = ({ route }) => {
 
   async function handleTaskCreate() {
     setIsVisible(false);
-    const notificationId = await scheduleNotification(taskObj);
+    const notificationId = Platform.OS!=="web"? await scheduleNotification(taskObj):"";
     let categoryObj = categoryList;
-    console.log(categoryList)
+    console.log(categoryList);
     categoryObj[task.title.toLowerCase()].tasks.push({
       ...taskObj,
       createdOn: new Date(),
       notificationId,
-      date: taskObj.frequency !== "Daily"?taskObj.date:Date.now()
+      date: taskObj.frequency !== "Daily" ? taskObj.date : Date.now(),
     });
-    console.log(categoryObj);
-     const user = await retrieveData();
-    const res = await setCollectionData("categories", user, categoryObj);
+    const res = await updateCategories(categoryObj);
     if (res) {
       setTask(categoryObj[task.title.toLowerCase()]);
       setToggleRender(!toggleRender);
@@ -151,24 +156,45 @@ const TaskManager = ({ route }) => {
     }
   }
 
+    async function handleTaskUpdate() {
+      setIsVisible(false);
+      await handleDelete(update)
+      await handleTaskCreate()
+    }
+
   function handlePress(task) {
+    setUpdate(task)
     setTaskObj(task);
     setIsVisible(true);
   }
 
+  async function updateCategories(obj) {
+    const user = await retrieveData();
+    return await setCollectionData("categories", user, obj);
+  }
+
   async function handleDelete(selectedTask) {
-    console.log(selectedTask)
-    const res = await Notifications.cancelScheduledNotificationAsync(
+    console.log(selectedTask);
+    Platform.OS!=="web"&& await Notifications.cancelScheduledNotificationAsync(
       selectedTask.notificationId
     );
-    console.log("Notiifcation Remove response: ",res)
     let categoryObj = categoryList;
     let tasks = task.tasks.filter(
       (obj) => obj.notificationId !== selectedTask.notificationId
     );
-    
+
     categoryObj[task.title.toLowerCase()].tasks = tasks;
-    setCategories(categoryObj)
+    console.log("categoryObj: ", categoryObj[task.title.toLowerCase()]);
+    const res = await updateCategories(categoryObj);
+    if (res) {
+      updateCategories(categoryObj);
+      setTask(categoryObj[task.title.toLowerCase()]);
+      setToggleRender(!toggleRender);
+      setCategoryList(categoryObj);
+    }
+    
+    // setTask(categoryObj[task.title.toLowerCase()]);
+      
   }
 
   function renderTasks() {
@@ -178,7 +204,7 @@ const TaskManager = ({ route }) => {
           key={task.createdOn}
           obj={task}
           handlePress={() => handlePress(task)}
-          handleDelete = {()=>handleDelete(task)}
+          handleDelete={() => handleDelete(task)}
         />
       );
     });
@@ -202,13 +228,25 @@ const TaskManager = ({ route }) => {
       <ScrollView>
         {task?.tasks.length > 0 && toggleRender && renderTasks()}
         {!toggleRender && task?.tasks.length && renderTasks()}
-
+        {!task?.tasks.length && (
+          <View style={styles.empty}>
+            <Text style={styles.subtitle}>
+              No tasks found for {route.params.category.title}
+            </Text>
+          </View>
+        )}
         <BottomSheet
-          onBackdropPress={() => setIsVisible(false)}
+          onBackdropPress={() => {
+            setUpdate(null);
+            setIsVisible(false);
+          }}
           modalProps={{}}
           isVisible={isVisible}
         >
-          <View style={styles.bottomSheetViewContainer}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.bottomSheetViewContainer}
+          >
             <Text style={styles.title}>New Task</Text>
             <Input
               placeholder="Enter title"
@@ -218,16 +256,23 @@ const TaskManager = ({ route }) => {
 
             {showTimePicker ? (
               <View style={{ zIndex: 10 }}>
-                <RNDateTimePicker
+                <DatePicker
+                  date={date}
+                  minimumDate={new Date()}
+                  onChangeTime={onChangeTime}
+                  mode="time"
+                />
+                {/* <RNDateTimePicker
                   value={date}
                   onChange={(cb) => onChangeTime(cb)}
                   mode="time"
                   positiveButton={{ label: "OK", textColor: "green" }}
-                />
+                /> */}
               </View>
             ) : (
               <Button
                 onPress={() => setShowTimePicker(true)}
+                buttonStyle={{ borderRadius: 5 }}
                 containerStyle={{ paddingHorizontal: 10, marginBottom: 20 }}
                 icon={
                   <MaterialIcons name="watch-later" size={24} color="white" />
@@ -241,13 +286,21 @@ const TaskManager = ({ route }) => {
             )}
 
             {showDatePicker && (
-              <RNDateTimePicker
-                value={date}
-                minimumDate={new Date()}
-                onChange={(cb) => onChangeDate(cb)}
-                mode="date"
-                positiveButton={{ label: "OK", textColor: "green" }}
-              />
+              <View style={{ alignItems: "center" }}>
+                <DatePicker
+                  date={date}
+                  minimumDate={new Date()}
+                  onChangeTime={onChangeDate}
+                  mode="date"
+                />
+              </View>
+              // <RNDateTimePicker
+              //   value={date}
+              //   minimumDate={new Date()}
+              //   onChange={(cb) => onChangeDate(cb)}
+              //   mode="date"
+              //   positiveButton={{ label: "OK", textColor: "green" }}
+              // />
             )}
 
             <ButtonGroup
@@ -269,21 +322,52 @@ const TaskManager = ({ route }) => {
               }}
               containerStyle={{ marginBottom: 20 }}
             />
-            <Button
-              onPress={handleTaskCreate}
-              buttonStyle={{ backgroundColor: "rgba(111, 202, 186, 1)" }}
-              containerStyle={{ paddingHorizontal: 10, marginBottom: 20 }}
-              icon={<MaterialIcons name="post-add" size={24} color="white" />}
-              title="Create Task"
-            />
+            {update ? (
+              <Button
+                onPress={()=>handleTaskUpdate()}
+                disabled={
+                  !validateObj(
+                    taskObj.frequency === "Daily"
+                      ? { title: taskObj.title, time: taskObj.time }
+                      : taskObj
+                  )
+                }
+                buttonStyle={{
+                  backgroundColor: "rgba(111, 202, 186, 1)",
+                  borderRadius: 5,
+                }}
+                containerStyle={{ paddingHorizontal: 10, marginBottom: 20 }}
+                icon={<MaterialIcons name="post-add" size={24} color="white" />}
+                title="Update Task"
+                
+              />
+            ) : (
+              <Button
+                onPress={handleTaskCreate}
+                disabled={
+                  !validateObj(
+                    taskObj.frequency === "Daily"
+                      ? { title: taskObj.title, time: taskObj.time }
+                      : taskObj
+                  )
+                }
+                buttonStyle={{
+                  backgroundColor: "rgba(111, 202, 186, 1)",
+                  borderRadius: 5,
+                }}
+                containerStyle={{ paddingHorizontal: 10, marginBottom: 20 }}
+                icon={<MaterialIcons name="post-add" size={24} color="white" />}
+                title="Create Task"
+              />
+            )}
             <Button
               onPress={() => setIsVisible(false)}
-              buttonStyle={{ backgroundColor: "red" }}
+              buttonStyle={{ backgroundColor: "red", borderRadius: 5 }}
               containerStyle={{ paddingHorizontal: 10, marginBottom: 20 }}
               icon={<MaterialIcons name="close" size={24} color="white" />}
-              title="Close"
+              title="Cancel"
             />
-          </View>
+          </KeyboardAvoidingView>
         </BottomSheet>
       </ScrollView>
     </View>
@@ -291,6 +375,12 @@ const TaskManager = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+  empty: {
+    flex: 1,
+    height:screenHeight*.9,
+    alignItems: "center",
+    justifyContent:"center"
+  },
   container: {
     flex: 1,
     alignItems: "center",
@@ -303,7 +393,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 22,
+    fontWeight: "bold",
+    fontSize: 20,
+    paddingLeft: 10,
     marginBottom: 10,
   },
   subtitle: {
@@ -314,6 +406,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 10,
     backgroundColor: "white",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   taskContainer: {
     borderLeftWidth: 5,

@@ -19,7 +19,7 @@ export async function getCollectionData(collectionName,user) {
 export async function setCollectionData(collectionName, user, obj) {
   try {
     const profilesRef = collection(firestore, collectionName);
-    await setDoc(doc(profilesRef, user.email), obj);
+    await setDoc(doc(profilesRef, user.email?.toLowerCase()), obj);
     return true
   } catch (err) {
     console.log(err);

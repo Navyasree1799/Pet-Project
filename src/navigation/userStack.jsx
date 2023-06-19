@@ -1,5 +1,4 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/HomeScreen";
 import ServicesScreen from "../screens/ServicesScreen";
@@ -8,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import ProfileCreation from "../screens/ProfileCreation";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import SettingsScreen from "../screens/Settings";
+import { Platform } from "react-native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -17,7 +17,12 @@ export default function UserStack() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: true,
-        tabBarStyle: { borderRadius: 30, height: 70, paddingVertical: 10 },
+        tabBarStyle: {
+          borderTopLeftRadius: 30,
+          borderTopRightRadius: 30,
+          paddingVertical: 10,
+          height: Platform.OS==="ios"?100:70,
+        },
         // title:"",
         tabBarLabel: "",
         activeTintColor: "blue", // Customize the active tab color
@@ -59,15 +64,3 @@ export default function UserStack() {
     </Tab.Navigator>
   );
 }
-
-const ProfileStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="ProfileCreation" component={ProfileCreation} />
-    </Stack.Navigator>
-  );
-};

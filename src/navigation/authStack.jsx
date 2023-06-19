@@ -8,20 +8,26 @@ import UserStack from "./userStack";
 import ProfileCreation from "../screens/ProfileCreation";
 import TaskManager from "../screens/TaskManager";
 import ProfileScreen from "../screens/ProfileScreen";
+import PetFactsScreen from "../screens/PetFactsScreen";
+import AboutDeveloperScreen from "../screens/AboutDeveloper";
 const Stack = createNativeStackNavigator();
 
 export default function AuthStack() {
   return (
     <NavigationContainer>
-      <Stack.Navigator
- 
-      >
+      <Stack.Navigator>
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Sign In" component={SignInScreen} />
         <Stack.Screen name="Sign Up" component={SignUpScreen} />
-        <Stack.Screen options={{ headerShown: false }} name="User Stack" component={UserStack} />
+        <Stack.Screen
+          options={{ headerShown: false }}
+          name="User Stack"
+          component={UserStack}
+        />
         <Stack.Screen name="ProfileCreation" component={ProfileCreation} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="AboutDeveloper" component={AboutDeveloperScreen} />
+        <Stack.Screen name="PetFactsScreen" component={PetFactsScreen} />
         <Stack.Screen
           options={{ headerShown: true }}
           name="Task Manager"

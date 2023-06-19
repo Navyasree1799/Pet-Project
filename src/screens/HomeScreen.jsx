@@ -1,29 +1,49 @@
 import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, StyleSheet, TouchableOpacity, View ,Image, ScrollView} from "react-native";
 import { signOut } from "firebase/auth";
 import { auth } from "../../config/firebase";
-import { useEffect } from "react";
 import useAuth from "../utils/hooks/useAuth";
-import { getCollectionData } from "../utils/firebaseFunctions";
+import { getCollectionData, setCollectionData } from "../utils/firebaseFunctions";
 import NewUser from "../components/NewUser";
 import Task from "../components/Task";
 import { useFocusEffect } from "@react-navigation/native";
+import Spinner from "../components/Spinner";
+import { Text } from "@rneui/themed";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialIcons } from "@expo/vector-icons";
+import { screenHeight } from "../utils/helpfulFunctions";
+
+const colorPallet = ["#817fff", "#fba172", "#ffd888", "#f9b6b4"];
 
 export default function HomeScreen({ navigation, route }) {
   const [userData, setUserData] = useState({});
   const [refresh, setRefresh] = useState(false);
   const [todaysActivities, setTodaysActivities] = useState();
-  const { retrieveData, updateUser, isLoading } = useAuth();
-
-  // useEffect(() => {
-  //   initialCall();
-  // }, [route]);
+  const { retrieveData, updateUser } = useAuth();
+  const [list, setList] = useState({
+    food: {
+      title: "Food",
+      tasks: [],
+      icon: "food-bank",
+    },
+    walking: {
+      title: "Walking",
+      tasks: [],
+      icon: "pets",
+    },
+    doctor: {
+      title: "Doctor",
+      tasks: [],
+      icon: "medical-services",
+    },
+    grooming: {
+      title: "Grooming",
+      tasks: [],
+      icon: "cleaning-services",
+    },
+  });
+  
+  const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -33,103 +53,219 @@ export default function HomeScreen({ navigation, route }) {
 
   async function initialCall() {
     const user = await retrieveData();
+    console.log(user);
     setUserData(user);
-    getData(user);
+     const categoriesData = await getCollectionData("categories", user);
+     categoriesData
+       ? setList(categoriesData)
+       : setCollectionData("categories", user, list);
+    setIsLoading(false);
+    await getData(user);
     if (!user?.hasOwnProperty("email")) {
       signOut(auth);
     } else if (user.hasOwnProperty("profileCreated") === false) {
+      setIsLoading(false);
     } else if (user.hasOwnProperty("profileCreated") === true) {
       const categoriesData = await getCollectionData("categories", user);
+      console.log('categoriesData',categoriesData)
       getTasksByDate(categoriesData);
       setRefresh(!refresh);
     }
-    
   }
 
   async function getData(user) {
     const profileData = await getCollectionData("profiles", user);
-    setUserData(profileData);
-    updateUser(profileData);
+    console.log("profileData", profileData);
+    if (profileData) {
+      setUserData(profileData);
+      updateUser(profileData);
+    }
   }
 
   function getTasksByDate(userActivities) {
-    const now = new Date().toDateTimeString();
-
+    const now = new Date().toDateString();
     const flattenedData = Object.values(userActivities).flatMap(
       (activity) => activity.tasks || []
     );
+      
 
     const filteredData = flattenedData.filter((task) => {
-      console.log(new Date(task.date).toDateTimeString(), now);
+      console.log(new Date(task.date).toDateString(), now);
       if (task.frequency === "Daily") {
-        return true
+        return true;
       } else if (task.frequency === "Specific Date") {
-        return new Date(task.time).toDateTimeString() === now;
+        return new Date(task.time).toDateString() === now;
       }
-    })
+    });
 
-    // const filteredData = flattenedData.filter((task) => {
-    //   const taskDate = new Date(task.date);
-    //   return (
-    //     taskDate === now ||
-    //     task.frequency === "Daily" ||
-    //     (task.frequency === "Monthly" &&
-    //       taskDate.getDate() === sd.getDate() &&
-    //       taskDate.getMonth() === sd.getMonth())
-    //   );
-    // });
     const sortedData = filteredData.sort(
       (a, b) => new Date(a.time) - new Date(b.time)
     );
 
-    console.log("Sorted Screen: ",sortedData)
+    console.log("Sorted Screen: ", sortedData);
     setTodaysActivities(sortedData);
   }
 
   if (isLoading) {
-    return <ActivityIndicator />;
+    return <Spinner />;
   } else if (userData?.hasOwnProperty("profileCreated") === false) {
-    return <NewUser userName={userData?.userName} />;
+    return <NewUser userName={userData.userName} />;
   } else {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Hi {userData?.userName}!</Text>
+        {/* <LinearGradient
+          colors={["#FDBE3B", "#FAD961"]}
+          style={styles.gradient}
+          start={[0, 0]}
+          end={[1, 1]}
+        ></LinearGradient> */}
+        <Text style={styles.title}> Hi {userData.userName}!</Text>
+        <Text style={styles.para}>
+          Lets take care of your pet {userData.name}!
+        </Text>
+        <View style={styles.categoryContainer}>
+          {Object.values(list)
+            .filter((item) => !item.hasOwnProperty("custom"))
+            .sort((a, b) => a.title.localeCompare(b.title))
+            .map((item, i) => {
+              console.log("ITEM: ", item);
+              return (
+                <TouchableOpacity
+                  key={item.title}
+                  onPress={() => {
+                    navigation.navigate("Task Manager", {
+                      category: item,
+                      list,
+                    });
+                  }}
+                >
+                  <MaterialIcons
+                    style={[
+                      { ...styles.categoryCard },
+                      {
+                        backgroundColor: colorPallet[i],
+                        padding: 20,
+                        borderRadius: 5,
+                      },
+                    ]}
+                    name={item.icon}
+                    size={24}
+                    color="white"
+                  />
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      fontWeight: "bold",
+                      marginTop: 5,
+                    }}
+                  >
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+        </View>
 
         <View style={styles.activitiesContainer}>
-          <Text style={styles.subTitle}>Todays Tasks</Text>
-          {todaysActivities?.length > 0&&refresh && (
-            <FlatList
-              contentContainerStyle={{ display: "flex", alignItems: "center" }}
-              data={todaysActivities}
-              renderItem={({ item }) => (
-                <Task
-                  key={item.createdOn}
-                  obj={item}
-                  handlePress={() => {}}
-                  hideDelete={true}
-                />
-              )}
-              keyExtractor={(item) => item.notificationId}
-            />
-          )}
-          {todaysActivities?.length > 0&&!refresh && (
-            <FlatList
-              contentContainerStyle={{ display: "flex", alignItems: "center" }}
-              data={todaysActivities}
-              renderItem={({ item }) => (
-                <Task
-                  key={item.createdOn}
-                  obj={item}
-                  handlePress={() => {}}
-                  hideDelete={true}
-                />
-              )}
-              keyExtractor={(item) => item.notificationId}
-            />
-          )}
-          {!todaysActivities?.length && (
-            <Text style={styles.dateText}>No Activities Found today</Text>
-          )}
+          <LinearGradient
+            colors={["#FDBE3B", "#FAD961"]}
+            style={styles.gradient}
+            start={[0, 0]}
+            end={[1, 1]}
+          >
+            <Text style={styles.subTitle}>Todays Tasks</Text>
+            {todaysActivities?.length > 0 && refresh && (
+              <FlatList
+                contentContainerStyle={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                data={todaysActivities}
+                renderItem={({ item }) => (
+                  <Task
+                    key={item.createdOn}
+                    obj={item}
+                    handlePress={() => {}}
+                    hideDelete={true}
+                  />
+                )}
+                keyExtractor={(item) => item.notificationId}
+              />
+            )}
+            {todaysActivities?.length > 0 && !refresh && (
+              <FlatList
+                contentContainerStyle={{
+                  display: "flex",
+                  alignItems: "center",
+                  maxHeight: 200,
+                }}
+                style={{ flexGrow: 0, maxHeight: 200 }}
+                data={todaysActivities}
+                renderItem={({ item }) => (
+                  <Task
+                    key={item.createdOn}
+                    obj={item}
+                    handlePress={() => {}}
+                    hideDelete={true}
+                  />
+                )}
+                keyExtractor={(item) => item.notificationId}
+              />
+            )}
+            {!todaysActivities?.length && (
+              <Text style={styles.dateText}>No Activities Found today</Text>
+            )}
+          </LinearGradient>
+          <ScrollView>
+            <View
+              style={{
+                marginTop: 20,
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("PetFactsScreen", { animal: "dog" })
+                }
+                style={{ width: "48%" }}
+              >
+                <LinearGradient
+                  colors={["#7F7FD5", "#91EAE4"]}
+                  style={[{ ...styles.gradient }, { height: "100%" }]}
+                  start={[0, 0]}
+                  end={[1, 1]}
+                >
+                  <Text style={styles.subTitle}>
+                    Find Interesting dog facts
+                  </Text>
+                  <Image
+                    source={require("../../assets/dogFact.png")}
+                    style={{ width: 150, height: 200, resizeMode: "contain" }}
+                  />
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("PetFactsScreen", { animal: "cat" })
+                }
+                style={{ width: "48%" }}
+              >
+                <LinearGradient
+                  colors={["#7F7FD5", "#91EAE4"]}
+                  style={[{ ...styles.gradient }, { height: "100%" }]}
+                  start={[0, 0]}
+                  end={[1, 1]}
+                >
+                  <Text style={styles.subTitle}>Find more cat facts</Text>
+                  <Image
+                    source={require("../../assets/catFact.png")}
+                    style={{ width: 150, height: 200, resizeMode: "contain" }}
+                  />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </View>
     );
@@ -137,10 +273,18 @@ export default function HomeScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  card: {
+    borderRadius: 8,
+    elevation: 4,
+  },
+  gradient: {
+    borderRadius: 8,
+    padding: 16,
+    maxHeight:screenHeight*.3
+  },
   container: {
     flex: 1,
     paddingHorizontal: 10,
-    paddingVertical: 15,
     backgroundColor: "#fff",
   },
   button: {
@@ -151,25 +295,50 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: "contain",
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
+  categoryContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 10,
-    backgroundColor: "lightgrey",
-    borderRadius: 5,
-    padding: 20,
-    color: "white",
+    marginBottom: 10,
+  },
+  categoryCard: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+
+    // color: "#FFF",
+
+    // fontSize: 22,
+    // fontWeight: "bold",
+    // paddingHorizontal: 10,
+    // backgroundColor: "grey",
+    // borderRadius: 5,
+    // padding: 20,
+    // color: "white",
+    // shadowColor: "#000000",
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // elevation: 2,
+  },
+  para: {
+    color: "grey",
+    fontSize: 12,
+    marginLeft:5,
+    marginBottom:20
+  },
   subTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    paddingHorizontal: 10,
     marginBottom: 10,
+    color: "white",
   },
   buttonContainer: {
     width: "100%",
@@ -182,10 +351,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginVertical: 16,
+    color: "white",
   },
   activitiesContainer: {
     flex: 1,
-    marginTop: 16,
+    marginTop: 10,
+    
   },
   calendarContainer: {
     flex: 1,

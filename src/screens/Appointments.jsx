@@ -2,51 +2,87 @@ import React from "react";
 import { StyleSheet, View, Text, FlatList } from "react-native";
 import { screenWidth } from "../utils/helpfulFunctions";
 import { Calendar } from "react-native-calendars";
-import { useEffect } from "react";
 import { useState } from "react";
 import Task from "../components/Task";
 import useAuth from "../utils/hooks/useAuth";
 import { getCollectionData } from "../utils/firebaseFunctions";
 import { useFocusEffect } from "@react-navigation/native";
+import Spinner from "../components/Spinner";
+import NewUser from "../components/NewUser";
 const Appointments = () => {
-  const { retrieveData } = useAuth()
-  const [refresh,setToggle] = useState(false)
+  const { retrieveData } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState();
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
   const [activitiesForSelectedDate, setActivitiesForSelectedDate] = useState();
   const [activities, setActivities] = useState();
   const [markedDate, setMarkedDate] = useState({
-    [new Date().toISOString().split("T")[0]]: {
+    [new Date()]: {
       selected: true,
     },
   });
-  // useEffect(() => {
-  //   getData()
-  // }, []);
 
   useFocusEffect(
     React.useCallback(() => {
-      getData()
+      getData();
       setMarkedDate({
-        [new Date().toISOString().split("T")[0]]: {
+        [new Date()]: {
           selected: true,
         },
       });
+      setSelectedDate(new Date().toDateString())
     }, [])
   );
 
-   async function getData() {
-     try {
-       const user = await retrieveData();
-       const categoriesData = await getCollectionData("categories", user)
-       categoriesData && setActivities(categoriesData);
-       getTasksByDate(new Date(),categoriesData)
+  function getTasksByDate(date, userActivities = activities) {
+    let sd = new Date(date);
+    sd = sd.setDate(sd.getDate() + 1);
+    sd = new Date(sd).toDateString();
+    const flattenedData = Object.values(userActivities).flatMap(
+      (activity) => activity.tasks || []
+    );
 
-     } catch (err) {
-       console.log(err);
-     }
-   }
+    //  const filteredData = flattenedData.filter((task) => {
+    //    const taskDate = new Date(task.date);
+    //    console.log(taskDate)
+    //    return (
+    //      taskDate === sd ||
+    //      task.frequency === "Daily" ||
+    //      (task.frequency === "Monthly" &&
+    //        taskDate.getDate() === sd.getDate() &&
+    //        taskDate.getMonth() === sd.getMonth())
+    //    );
+    //  });
+    const filteredData = flattenedData.filter((task) => {
+      console.log(new Date(task.date).toDateString(), sd);
+      if (task.frequency === "Daily") {
+        return true;
+      } else if (task.frequency === "Specific Date") {
+        return new Date(task.date).toDateString() === sd;
+      }
+    });
+    const sortedData = filteredData.sort(
+      (a, b) => new Date(a.time) - new Date(b.time)
+    );
+    setActivitiesForSelectedDate(sortedData);
+  }
+
+
+  async function getData() {
+    try {
+      const user = await retrieveData();
+      setUserData(user);
+      setIsLoading(false)
+      const categoriesData = await getCollectionData("categories", user);
+      categoriesData && setActivities(categoriesData);
+      getTasksByDate(new Date(), categoriesData);
+    } catch (err) {
+      console.log(err);
+       setIsLoading(false);
+    }
+  }
 
   const onDayPress = (day) => {
     let sd = new Date(day.dateString);
@@ -67,56 +103,27 @@ const Appointments = () => {
         console.log(markedDates);
       });
     });
-    console.log("marked Dates: ",markedDates)
+    console.log("marked Dates: ", markedDates);
     setMarkedDate(markedDates);
 
-    getTasksByDate(day.dateString)
-
+    getTasksByDate(day.dateString);
   };
 
-
-  function getTasksByDate(date,userActivities = activities) {
-       let sd = new Date(date);
-       sd = sd.setDate(sd.getDate() + 1);
-       sd = new Date(sd).toDateString();
-       const flattenedData = Object.values(userActivities).flatMap(
-         (activity) => activity.tasks || []
-    );
-    console.log(sd)
-
-      //  const filteredData = flattenedData.filter((task) => {
-      //    const taskDate = new Date(task.date);
-      //    console.log(taskDate)
-      //    return (
-      //      taskDate === sd ||
-      //      task.frequency === "Daily" ||
-      //      (task.frequency === "Monthly" &&
-      //        taskDate.getDate() === sd.getDate() &&
-      //        taskDate.getMonth() === sd.getMonth())
-      //    );
-      //  });
-     const filteredData = flattenedData.filter((task) => {
-       console.log(new Date(task.date).toDateString(), sd);
-       if (task.frequency === "Daily") {
-         return true
-       } else if (task.frequency === "Specific Date") {
-          return new Date(task.date).toDateString() === sd;
-       }
-       
-     });
-       const sortedData = filteredData.sort(
-         (a, b) => new Date(a.time) - new Date(b.time)
-       );
-       setActivitiesForSelectedDate(sortedData);
+  
+  if (isLoading) {
+    return <Spinner />;
+  } else if (userData?.hasOwnProperty("profileCreated") === false) {
+    return <NewUser userName={userData.userName} />;
   }
-
   return (
     <View style={styles.container}>
       <View style={styles.calendarContainer}>
         <Calendar markedDates={markedDate} onDayPress={onDayPress} />
         <View style={styles.activitiesContainer}>
-          <Text style={styles.subtitle}>Activities on {new Date(selectedDate).toLocaleDateString()}</Text>
-          {activitiesForSelectedDate?.length>0 ? (
+          <Text style={styles.subtitle}>
+            Activities on {new Date(selectedDate).toLocaleDateString()}
+          </Text>
+          {activitiesForSelectedDate?.length > 0 ? (
             <FlatList
               data={activitiesForSelectedDate}
               renderItem={({ item }) => (
@@ -131,7 +138,7 @@ const Appointments = () => {
             />
           ) : (
             <Text style={styles.dateText}>
-              No Activities Found on {"\n"+selectedDate}
+              No Activities Found on {"\n" + selectedDate}
             </Text>
           )}
         </View>

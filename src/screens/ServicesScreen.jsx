@@ -5,9 +5,13 @@ import { StyleSheet, View, Text, ActivityIndicator } from "react-native";
 import useAuth from "../utils/hooks/useAuth";
 import { getCollectionData, setCollectionData } from "../utils/firebaseFunctions";
 import { screenWidth } from "../utils/helpfulFunctions";
+import NewUser from "../components/NewUser";
+import Spinner from "../components/Spinner";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ServiceScreen = ({ navigation }) => {
-  const [userData,setUserData] = useState()
+  const [userData, setUserData] = useState()
+  const [isLoading, setIsLoading] = useState(true);
   const [list, setList] = useState({
     food: {
       title: "Food",
@@ -19,14 +23,27 @@ const ServiceScreen = ({ navigation }) => {
       tasks: [],
       icon: "pets",
     },
+    doctor: {
+      title: "Doctor",
+      tasks: [],
+      icon: "medical-services",
+    },
+    grooming: {
+      title: "Grooming",
+      tasks: [],
+      icon: "cleaning-services",
+    },
   });
   const [visible, setVisible] = useState(false);
   const [newCategory,setNewCategory] = useState("")
   const { retrieveData } = useAuth();
 
-  useEffect(() => {
-    getCategories();
-  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getCategories();
+    }, [])
+  );
 
   async function getCategories(user) {
     try {
@@ -36,8 +53,10 @@ const ServiceScreen = ({ navigation }) => {
       categoriesData
         ? setList(categoriesData)
         : setCollectionData("categories", user, list);
+      setIsLoading(false)
     } catch (err) {
       console.log(err);
+      setIsLoading(false);
     }
   }
 
@@ -56,36 +75,41 @@ const ServiceScreen = ({ navigation }) => {
         title: newCategory,
         tasks: [],
         icon: "settings",
+        custom:true
       },
     };
     setCollectionData("categories", user, updatedCategories);
     setList(updatedCategories)
   }
 
- if (userData?.hasOwnProperty("profileCreated") === false) {
-    return <NewUser userName={userData?.userName} />
-  }
+ if (isLoading) {
+   return <Spinner />;
+ } else if (userData?.hasOwnProperty("profileCreated") === false) {
+   return <NewUser userName={userData?.userName} />;
+ }
   return (
     <View style={styles.container}>
       <View style={styles.listView}>
-        {Object.values(list).map((item, i) => (
-          <ListItem
-            key={i}
-            bottomDivider
-            onPress={() => {
-             navigation.navigate("Task Manager", { category: item, list }); 
-            }}
-          >
-            <MaterialIcons name={item.icon} size={24} color="black" />
-            <ListItem.Content>
-              <ListItem.Title>{item.title}</ListItem.Title>
-            </ListItem.Content>
-            <MaterialIcons name="chevron-right" size={24} color="black" />
-          </ListItem>
-        ))}
+        {Object.values(list)
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .map((item, i) => (
+            <ListItem
+              key={i}
+              bottomDivider
+              onPress={() => {
+                navigation.navigate("Task Manager", { category: item, list });
+              }}
+            >
+              <MaterialIcons name={item.icon} size={24} color="black" />
+              <ListItem.Content>
+                <ListItem.Title>{item.title}</ListItem.Title>
+              </ListItem.Content>
+              <MaterialIcons name="chevron-right" size={24} color="black" />
+            </ListItem>
+          ))}
       </View>
       <View style={{ display: "flex", alignItems: "center", marginTop: 20 }}>
-        <Text style={styles.title}>Create new category</Text>
+        <Text style={styles.title}>Create custom category</Text>
         <AntDesign
           name="pluscircle"
           size={26}

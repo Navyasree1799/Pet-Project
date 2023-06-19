@@ -36,7 +36,7 @@ export default Task;
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 22,
+    fontSize: 18,
     marginBottom: 10,
   },
   taskContainer: {
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.9,
     maxWidth: 600,
     backgroundColor: "#FFFFFF",
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 16,
     marginBottom: 16,
     shadowColor: "#000000",
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     color: "#888",
   },
   taskTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 8,
   },

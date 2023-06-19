@@ -27,14 +27,16 @@ const AvatarPicker = ({avatar,setAvatar}) => {
     <View>
       <Avatar
         size="large"
-        containerStyle={{backgroundColor:"grey"}}
+        containerStyle={{ backgroundColor: "grey" }}
         rounded
         title="P"
         source={avatar ? { uri: avatar } : null}
         showEditButton
         onEditPress={handleAvatarPicker}
         onPress={handleAvatarPicker}
-      />
+      >
+        <Avatar.Accessory size={23} />
+      </Avatar>
     </View>
   );
 };

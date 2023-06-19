@@ -2,6 +2,7 @@ import { Dimensions } from "react-native";
 
 
 export const screenWidth = Dimensions.get("window").width;
+export const screenHeight = Dimensions.get("window").height;
 
 export function hasObjectChanged(oldObj, newObj) {
   // Get the keys of the object properties
@@ -15,4 +16,8 @@ export function hasObjectChanged(oldObj, newObj) {
   }
 
   return false; // Object has not changed
+}
+
+export const validateObj = (obj) => {
+   return Object.values(obj).every((value) => value !== null && value !== undefined && value !== "");
 }

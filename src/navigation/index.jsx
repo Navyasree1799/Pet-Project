@@ -9,7 +9,7 @@ export default function RootNavigation() {
     return <AuthStack />;
   } else {
     return (
-      <View style={{ width: screenWidth, maxWidth: 700 }}>
+      <View style={{ width: screenWidth, maxWidth: 500,marginHorizontal:screenWidth*.3 }}>
         <AuthStack />
       </View>
     );
