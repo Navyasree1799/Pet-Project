@@ -56,6 +56,7 @@ const ProfileCreation = ({ navigation }) => {
     const temp = breeds.map((breed) => ({
       label: breed.name,
       value: breed.name,
+      id:breed.id
     }));
     setBreedList(temp);
   }

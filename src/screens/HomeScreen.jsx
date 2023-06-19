@@ -1,16 +1,26 @@
 import React, { useState } from "react";
-import { FlatList, StyleSheet, TouchableOpacity, View ,Image, ScrollView} from "react-native";
+import {
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Image,
+  ScrollView,
+} from "react-native";
 import { signOut } from "firebase/auth";
 import { auth } from "../../config/firebase";
 import useAuth from "../utils/hooks/useAuth";
-import { getCollectionData, setCollectionData } from "../utils/firebaseFunctions";
+import {
+  getCollectionData,
+  setCollectionData,
+} from "../utils/firebaseFunctions";
 import NewUser from "../components/NewUser";
 import Task from "../components/Task";
 import { useFocusEffect } from "@react-navigation/native";
 import Spinner from "../components/Spinner";
 import { Text } from "@rneui/themed";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome5, MaterialIcons } from "@expo/vector-icons";
 import { screenHeight } from "../utils/helpfulFunctions";
 
 const colorPallet = ["#817fff", "#fba172", "#ffd888", "#f9b6b4"];
@@ -42,7 +52,7 @@ export default function HomeScreen({ navigation, route }) {
       icon: "cleaning-services",
     },
   });
-  
+
   const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
@@ -53,12 +63,11 @@ export default function HomeScreen({ navigation, route }) {
 
   async function initialCall() {
     const user = await retrieveData();
-    console.log(user);
     setUserData(user);
-     const categoriesData = await getCollectionData("categories", user);
-     categoriesData
-       ? setList(categoriesData)
-       : setCollectionData("categories", user, list);
+    const categoriesData = await getCollectionData("categories", user);
+    categoriesData
+      ? setList(categoriesData)
+      : setCollectionData("categories", user, list);
     setIsLoading(false);
     await getData(user);
     if (!user?.hasOwnProperty("email")) {
@@ -67,7 +76,6 @@ export default function HomeScreen({ navigation, route }) {
       setIsLoading(false);
     } else if (user.hasOwnProperty("profileCreated") === true) {
       const categoriesData = await getCollectionData("categories", user);
-      console.log('categoriesData',categoriesData)
       getTasksByDate(categoriesData);
       setRefresh(!refresh);
     }
@@ -75,7 +83,6 @@ export default function HomeScreen({ navigation, route }) {
 
   async function getData(user) {
     const profileData = await getCollectionData("profiles", user);
-    console.log("profileData", profileData);
     if (profileData) {
       setUserData(profileData);
       updateUser(profileData);
@@ -87,10 +94,8 @@ export default function HomeScreen({ navigation, route }) {
     const flattenedData = Object.values(userActivities).flatMap(
       (activity) => activity.tasks || []
     );
-      
 
     const filteredData = flattenedData.filter((task) => {
-      console.log(new Date(task.date).toDateString(), now);
       if (task.frequency === "Daily") {
         return true;
       } else if (task.frequency === "Specific Date") {
@@ -101,8 +106,6 @@ export default function HomeScreen({ navigation, route }) {
     const sortedData = filteredData.sort(
       (a, b) => new Date(a.time) - new Date(b.time)
     );
-
-    console.log("Sorted Screen: ", sortedData);
     setTodaysActivities(sortedData);
   }
 
@@ -112,114 +115,133 @@ export default function HomeScreen({ navigation, route }) {
     return <NewUser userName={userData.userName} />;
   } else {
     return (
-      <View style={styles.container}>
-        {/* <LinearGradient
-          colors={["#FDBE3B", "#FAD961"]}
-          style={styles.gradient}
-          start={[0, 0]}
-          end={[1, 1]}
-        ></LinearGradient> */}
-        <Text style={styles.title}> Hi {userData.userName}!</Text>
-        <Text style={styles.para}>
-          Lets take care of your pet {userData.name}!
-        </Text>
-        <View style={styles.categoryContainer}>
-          {Object.values(list)
-            .filter((item) => !item.hasOwnProperty("custom"))
-            .sort((a, b) => a.title.localeCompare(b.title))
-            .map((item, i) => {
-              console.log("ITEM: ", item);
-              return (
-                <TouchableOpacity
-                  key={item.title}
-                  onPress={() => {
-                    navigation.navigate("Task Manager", {
-                      category: item,
-                      list,
-                    });
-                  }}
-                >
-                  <MaterialIcons
-                    style={[
-                      { ...styles.categoryCard },
-                      {
-                        backgroundColor: colorPallet[i],
-                        padding: 20,
-                        borderRadius: 5,
-                      },
-                    ]}
-                    name={item.icon}
-                    size={24}
-                    color="white"
-                  />
-                  <Text
-                    style={{
-                      textAlign: "center",
-                      fontWeight: "bold",
-                      marginTop: 5,
+      <ScrollView>
+        <View style={styles.container}>
+          <Text style={styles.title}> Hi {userData.userName}!</Text>
+          <Text style={styles.para}>
+            Lets take care of your pet {userData.name}!
+          </Text>
+          <View style={styles.categoryContainer}>
+            {Object.values(list)
+              .filter((item) => !item.hasOwnProperty("custom"))
+              .sort((a, b) => a.title.localeCompare(b.title))
+              .map((item, i) => {
+                return (
+                  <TouchableOpacity
+                    key={item.title}
+                    onPress={() => {
+                      navigation.navigate("Task Manager", {
+                        category: item,
+                        list,
+                      });
                     }}
                   >
-                    {item.title}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-        </View>
+                    <MaterialIcons
+                      style={[
+                        { ...styles.categoryCard },
+                        {
+                          backgroundColor: colorPallet[i],
+                          padding: 20,
+                          borderRadius: 5,
+                        },
+                      ]}
+                      name={item.icon}
+                      size={24}
+                      color="white"
+                    />
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        marginTop: 5,
+                      }}
+                    >
+                      {item.title}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+          </View>
 
-        <View style={styles.activitiesContainer}>
-          <LinearGradient
-            colors={["#FDBE3B", "#FAD961"]}
-            style={styles.gradient}
-            start={[0, 0]}
-            end={[1, 1]}
-          >
-            <Text style={styles.subTitle}>Todays Tasks</Text>
-            {todaysActivities?.length > 0 && refresh && (
-              <FlatList
-                contentContainerStyle={{
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                data={todaysActivities}
-                renderItem={({ item }) => (
-                  <Task
-                    key={item.createdOn}
-                    obj={item}
-                    handlePress={() => {}}
-                    hideDelete={true}
-                  />
-                )}
-                keyExtractor={(item) => item.notificationId}
-              />
-            )}
-            {todaysActivities?.length > 0 && !refresh && (
-              <FlatList
-                contentContainerStyle={{
-                  display: "flex",
-                  alignItems: "center",
-                  maxHeight: 200,
-                }}
-                style={{ flexGrow: 0, maxHeight: 200 }}
-                data={todaysActivities}
-                renderItem={({ item }) => (
-                  <Task
-                    key={item.createdOn}
-                    obj={item}
-                    handlePress={() => {}}
-                    hideDelete={true}
-                  />
-                )}
-                keyExtractor={(item) => item.notificationId}
-              />
-            )}
-            {!todaysActivities?.length && (
-              <Text style={styles.dateText}>No Activities Found today</Text>
-            )}
-          </LinearGradient>
-          <ScrollView>
+          <View style={styles.activitiesContainer}>
+            <LinearGradient
+              colors={["#FDBE3B", "#FAD961"]}
+              style={styles.gradient}
+              start={[0, 0]}
+              end={[1, 1]}
+            >
+              <Text style={styles.subTitle}>Todays Tasks</Text>
+              {todaysActivities?.length > 0 && refresh && (
+                <FlatList
+                  nestedScrollEnabled
+                  contentContainerStyle={{
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  data={todaysActivities}
+                  renderItem={({ item }) => (
+                    <Task
+                      key={item.createdOn}
+                      obj={item}
+                      handlePress={() => {}}
+                      hideDelete={true}
+                    />
+                  )}
+                  keyExtractor={(item) => item.notificationId}
+                />
+              )}
+              {todaysActivities?.length > 0 && !refresh && (
+                <FlatList
+                  contentContainerStyle={{
+                    display: "flex",
+                    alignItems: "center",
+                    maxHeight: 200,
+                  }}
+                  nestedScrollEnabled
+                  style={{ flexGrow: 0, maxHeight: 200 }}
+                  data={todaysActivities}
+                  renderItem={({ item }) => (
+                    <Task
+                      key={item.createdOn}
+                      obj={item}
+                      handlePress={() => {}}
+                      hideDelete={true}
+                    />
+                  )}
+                  keyExtractor={(item) => item.notificationId}
+                />
+              )}
+              {!todaysActivities?.length && (
+                <Text style={styles.dateText}>No Activities Found today</Text>
+              )}
+            </LinearGradient>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("BreedInfoScreen")}
+            >
+              <LinearGradient
+                colors={["#FD6585", "#FFD3A5"]}
+                style={[
+                  { ...styles.gradient },
+                  { marginTop: 15, flexDirection: "row" },
+                ]}
+                start={[0, 0]}
+                end={[1, 1]}
+              >
+                <FontAwesome5
+                  name={userData?.petType}
+                  size={24}
+                  color="white"
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={styles.subTitle}>
+                  Find more about {userData.breed} breed
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
             <View
               style={{
-                marginTop: 20,
+                marginTop: 15,
                 flexDirection: "row",
                 justifyContent: "space-between",
               }}
@@ -257,7 +279,10 @@ export default function HomeScreen({ navigation, route }) {
                   start={[0, 0]}
                   end={[1, 1]}
                 >
-                  <Text style={styles.subTitle}>Find more cat facts</Text>
+                  <Text style={styles.subTitle}>
+                    {" "}
+                    Find Interesting cat facts
+                  </Text>
                   <Image
                     source={require("../../assets/catFact.png")}
                     style={{ width: 150, height: 200, resizeMode: "contain" }}
@@ -265,9 +290,9 @@ export default function HomeScreen({ navigation, route }) {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </ScrollView>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     );
   }
 }
@@ -280,7 +305,7 @@ const styles = StyleSheet.create({
   gradient: {
     borderRadius: 8,
     padding: 16,
-    maxHeight:screenHeight*.3
+    maxHeight: screenHeight * 0.3,
   },
   container: {
     flex: 1,
@@ -331,8 +356,8 @@ const styles = StyleSheet.create({
   para: {
     color: "grey",
     fontSize: 12,
-    marginLeft:5,
-    marginBottom:20
+    marginLeft: 5,
+    marginBottom: 20,
   },
   subTitle: {
     fontSize: 18,
@@ -356,7 +381,6 @@ const styles = StyleSheet.create({
   activitiesContainer: {
     flex: 1,
     marginTop: 10,
-    
   },
   calendarContainer: {
     flex: 1,

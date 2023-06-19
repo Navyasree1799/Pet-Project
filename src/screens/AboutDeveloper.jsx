@@ -10,7 +10,7 @@ const AboutDeveloperScreen = () => {
         style={styles.avatar}
       />
       <Text style={styles.name}>Navyasree Putluri</Text>
-      <Text style={styles.bio}>Masters in Information and technlogy,{"\n"} Grand Valley State university</Text>
+      <Text style={styles.bio}>Masters in Applied Computer science,{"\n"} Grand Valley State university</Text>
       <Text style={styles.contact}> putlurinavyasree@gmail.com</Text>
       <View style={styles.socialIconsContainer}>
         <Ionicons

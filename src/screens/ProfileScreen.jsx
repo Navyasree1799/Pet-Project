@@ -20,6 +20,7 @@ import getBlobFromUri from "../utils/getBlobFromUri";
 
 const ProfileScreen = ({navigation}) => {
   const [petObj, setPetObj] = useState({});
+  
   const [defaultPetObj, setDefaultPetObj] = useState({});
   const {retrieveData} = useAuth()
   const [genderOpen, setGenderOpen] = useState(false);
@@ -35,7 +36,6 @@ const ProfileScreen = ({navigation}) => {
   const onSubmit = async() => {
     // Handle form submission
     const user = await retrieveData()
-    console.log(user.email)
     if (defaultPetObj?.avatar === petObj?.avatar) {
       setCollectionData("profiles", user, { ...petObj, profileCreated: true });
       navigation.navigate("Home");

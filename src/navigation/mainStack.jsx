@@ -10,9 +10,10 @@ import TaskManager from "../screens/TaskManager";
 import ProfileScreen from "../screens/ProfileScreen";
 import PetFactsScreen from "../screens/PetFactsScreen";
 import AboutDeveloperScreen from "../screens/AboutDeveloper";
+import BreedInfoScreen from "../screens/BreedInfoScreen";
 const Stack = createNativeStackNavigator();
 
-export default function AuthStack() {
+export default function MainStack() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
@@ -23,6 +24,13 @@ export default function AuthStack() {
           options={{ headerShown: false }}
           name="User Stack"
           component={UserStack}
+        />
+        <Stack.Screen
+          options={{
+            title: "Know Your Breed",
+          }}
+          name="BreedInfoScreen"
+          component={BreedInfoScreen}
         />
         <Stack.Screen name="ProfileCreation" component={ProfileCreation} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />

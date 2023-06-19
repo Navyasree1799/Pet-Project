@@ -30,6 +30,7 @@ const Appointments = () => {
       setMarkedDate({
         [new Date()]: {
           selected: true,
+          marked:true
         },
       });
       setSelectedDate(new Date().toDateString())

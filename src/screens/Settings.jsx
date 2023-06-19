@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, {  useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import useAuth from "../utils/hooks/useAuth";
-import { Avatar, Button, Overlay } from "@rneui/themed";
+import {  Button, Overlay } from "@rneui/themed";
 import { getCollectionData } from "../utils/firebaseFunctions";
 import { DeleteAccount } from "../utils/hooks/Delete";
+import { useFocusEffect } from "@react-navigation/native";
+import Spinner from "../components/Spinner";
+import NewUser from "../components/NewUser";
 
 const SettingsScreen = ({ navigation }) => {
   const { retrieveData, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState();
   const options = [
     {
@@ -22,7 +26,8 @@ const SettingsScreen = ({ navigation }) => {
       icon: "info",
       handlePress: async() => {
         const user = await retrieveData()
-        Linking.openURL(`https://www.google.com/search?q=${user.breed}`);
+        navigation.navigate("BreedInfoScreen");
+        // Linking.openURL(`https://www.google.com/search?q=${user.breed}`);
       }
         
     },
@@ -58,14 +63,21 @@ const SettingsScreen = ({ navigation }) => {
   const toggleOverlay = () => {
     setVisible(!visible);
   };
-  useEffect(() => {
-    getProfileData();
-  });
+
+    useFocusEffect(
+      React.useCallback(() => {
+      getProfileData();
+      }, [])
+    );
+
 
   async function getProfileData() {
     const user = await retrieveData();
-    const profileData = await getCollectionData("profiles", user);
-    setUserData(profileData);
+
+    // const profileData = await getCollectionData("profiles", user);
+    // console.log("Profile info: ", user, profileData);
+    setUserData(user);
+     setIsLoading(false);
   }
 
   const renderItem = ({ item }) => (
@@ -86,6 +98,12 @@ const SettingsScreen = ({ navigation }) => {
       />
     </TouchableOpacity>
   );
+
+   if (isLoading) {
+     return <Spinner />;
+   } else if (userData?.hasOwnProperty("profileCreated") === false) {
+     return <NewUser userName={userData.userName} />;
+   }
 
   return (
     <View style={styles.container}>
