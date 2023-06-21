@@ -17,12 +17,15 @@ import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { firestore, storage } from "../../config/firebase";
 import getBlobFromUri from "../utils/getBlobFromUri";
+import { Icon, Slider } from "@rneui/themed";
+import { Entypo, Ionicons } from "@expo/vector-icons";
+import { Platform } from "react-native";
 
-const ProfileScreen = ({navigation}) => {
+const ProfileScreen = ({ navigation }) => {
   const [petObj, setPetObj] = useState({});
-  
+
   const [defaultPetObj, setDefaultPetObj] = useState({});
-  const {retrieveData} = useAuth()
+  const { retrieveData } = useAuth();
   const [genderOpen, setGenderOpen] = useState(false);
   const [gender, setGender] = useState([
     { label: "Male", value: "male" },
@@ -33,9 +36,9 @@ const ProfileScreen = ({navigation}) => {
   const [breedList, setBreedList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async() => {
+  const onSubmit = async () => {
     // Handle form submission
-    const user = await retrieveData()
+    const user = await retrieveData();
     if (defaultPetObj?.avatar === petObj?.avatar) {
       setCollectionData("profiles", user, { ...petObj, profileCreated: true });
       navigation.navigate("Home");
@@ -43,19 +46,15 @@ const ProfileScreen = ({navigation}) => {
       uploadToStorage();
       navigation.navigate("Home");
     }
-    
-    
   };
 
-  
-
   useEffect(() => {
-    getUserData()
-  }, [])
-  
+    getUserData();
+  }, []);
+
   async function getUserData() {
-    const user = await retrieveData()
-    const { avatar, breed, age, gender, name, petType, userName } = user
+    const user = await retrieveData();
+    const { avatar, breed, age, gender, name, petType, userName } = user;
     setDefaultPetObj({ avatar, breed, age, gender, name, petType, userName });
     if (user) {
       setPetObj({ avatar, breed, age, gender, name, petType, userName });
@@ -68,7 +67,7 @@ const ProfileScreen = ({navigation}) => {
     setBreedList(temp);
   }
 
-  function onChange(prop,value) {
+  function onChange(prop, value) {
     setPetObj((petObj) => ({ ...petObj, [prop]: value }));
   }
 
@@ -116,15 +115,14 @@ const ProfileScreen = ({navigation}) => {
 
   async function updateProfile(url = "") {
     const petData = { ...pet, profileCreated: true };
-    const user = retrieveData()
-    // const userName = user?.email.substring(0, user?.email.indexOf("@"));
+    const user = retrieveData();
     const profilesRef = collection(firestore, "profiles");
 
     try {
       await setDoc(doc(profilesRef, user.email.toLowerCase()), {
         ...petData,
         ...petObj,
-        avatar:url
+        avatar: url,
       });
     } catch (err) {
       console.log(err);
@@ -147,7 +145,7 @@ const ProfileScreen = ({navigation}) => {
       <Text style={styles.label}>Pet Name</Text>
       <TextInput
         style={styles.input}
-        value={petObj.name}
+        value={petObj.name || ""}
         onChangeText={(text) => onChange("name", text)}
         selectionColor={"#5188E3"}
         placeholder="Enter Name"
@@ -155,14 +153,57 @@ const ProfileScreen = ({navigation}) => {
       />
 
       <Text style={styles.label}>Pet Age</Text>
+      <View style={styles.dropdownContainer}>
+        <Slider
+          // value={pet.age}
+          value={petObj.age || ""}
+          // onValueChange={(text) => setPet({ ...pet, age: text })}
+          onValueChange={(text) => onChange("age", text)}
+          maximumValue={50}
+          minimumValue={0}
+          step={1}
+          trackStyle={{ height: 10, backgroundColor: "transparent" }}
+          thumbStyle={{
+            height: 20,
+            width: 20,
+            backgroundColor: "transparent",
+          }}
+          thumbProps={{
+            children: (
+              <View>
+                {Platform.OS == "web" ? (
+                  <Ionicons
+                    name="heart-circle"
+                    style={{ bottom: 0, right: 20 }}
+                    size={30}
+                    color="#f50"
+                  />
+                ) : (
+                  <Icon
+                    name="heartbeat"
+                    type="font-awesome"
+                    size={20}
+                    reverse
+                    containerStyle={{ bottom: 20, right: 20 }}
+                    color="#f50"
+                  />
+                )}
+                <Text style={{ bottom: 30 }}>{petObj.age}</Text>
+              </View>
+            ),
+          }}
+        />
+      </View>
+
+      {/* <Text style={styles.label}>Pet Age</Text>
       <TextInput
         style={styles.input}
-        value={petObj.age}
+        value={petObj.age || ""}
         onChangeText={(text) => onChange("age", text)}
         selectionColor={"#5188E3"}
         placeholder="Enter Password"
         placeholderTextColor="#B7B7B7"
-      />
+      /> */}
 
       <Text style={styles.label}>Breed</Text>
       <View style={styles.dropdownContainer}>
@@ -227,7 +268,7 @@ const ProfileScreen = ({navigation}) => {
       <Text style={styles.label}>Your Name</Text>
       <TextInput
         style={styles.input}
-        value={petObj.userName}
+        value={petObj.userName || ""}
         onChangeText={(text) => onChange("userName", text)}
         selectionColor={"#5188E3"}
         placeholder="Enter Your Name"
@@ -261,7 +302,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   label: {
-    fontWeight:"bold",
+    fontWeight: "bold",
     marginBottom: 7,
     marginStart: 10,
   },
@@ -288,7 +329,7 @@ const styles = StyleSheet.create({
   },
   updateText: {
     color: "white",
-    textAlign:"center"
+    textAlign: "center",
   },
   logIn: {
     flex: 1,

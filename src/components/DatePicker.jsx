@@ -1,4 +1,5 @@
 import RNDateTimePicker from "@react-native-community/datetimepicker";
+import moment from "moment/moment";
 import { useState } from "react";
 import { Platform, createElement } from "react-native"
 
@@ -31,8 +32,15 @@ const DatePicker = ({date,onChangeTime,mode,minimumDate}) => {
           type: mode,
           value: date,
           onChange: (event) => {
+            // console.log( event.target.value,new Date(Date.parse(event.target.value)).toISOString());
+            
             onChangeTime({
-              nativeEvent: { timestamp: timeToTimestamp(event.target.value) },
+              nativeEvent: {
+                timestamp:
+                  mode === "time"
+                    ? timeToTimestamp(event.target.value)
+                    : moment(event.target.value, "YYYY-MM-DD").valueOf(),
+              },
             });
           },
           style: {

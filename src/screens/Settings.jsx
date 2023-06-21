@@ -25,7 +25,6 @@ const SettingsScreen = ({ navigation }) => {
       title: "Know About Your Pet",
       icon: "info",
       handlePress: async() => {
-        const user = await retrieveData()
         navigation.navigate("BreedInfoScreen");
         // Linking.openURL(`https://www.google.com/search?q=${user.breed}`);
       }

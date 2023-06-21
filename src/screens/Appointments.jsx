@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, Text, FlatList } from "react-native";
+import { StyleSheet, View, Text, FlatList, Platform } from "react-native";
 import { screenWidth } from "../utils/helpfulFunctions";
 import { Calendar } from "react-native-calendars";
 import { useState } from "react";
@@ -30,17 +30,17 @@ const Appointments = () => {
       setMarkedDate({
         [new Date()]: {
           selected: true,
-          marked:true
+          marked: true,
         },
       });
-      setSelectedDate(new Date().toDateString())
+      setSelectedDate(new Date().toDateString());
     }, [])
   );
 
   function getTasksByDate(date, userActivities = activities) {
     let sd = new Date(date);
-    sd = sd.setDate(sd.getDate() + 1);
-    sd = new Date(sd).toDateString();
+    sd.setDate(sd.getDate() + 1);
+    // sd = new Date(sd).toDateString();
     const flattenedData = Object.values(userActivities).flatMap(
       (activity) => activity.tasks || []
     );
@@ -57,11 +57,16 @@ const Appointments = () => {
     //    );
     //  });
     const filteredData = flattenedData.filter((task) => {
-      console.log(new Date(task.date).toDateString(), sd);
+      console.log(new Date(task.date).toDateString(), sd.toDateString());
       if (task.frequency === "Daily") {
         return true;
       } else if (task.frequency === "Specific Date") {
-        return new Date(task.date).toDateString() === sd;
+        return new Date(task.date).toDateString() === sd.toDateString();
+      } else {
+        return (
+          new Date(task.date).getMonth === sd.getMonth &&
+          new Date(task.date).toDateString() === sd.toDateString()
+        );
       }
     });
     const sortedData = filteredData.sort(
@@ -70,18 +75,17 @@ const Appointments = () => {
     setActivitiesForSelectedDate(sortedData);
   }
 
-
   async function getData() {
     try {
       const user = await retrieveData();
       setUserData(user);
-      setIsLoading(false)
+      setIsLoading(false);
       const categoriesData = await getCollectionData("categories", user);
       categoriesData && setActivities(categoriesData);
       getTasksByDate(new Date(), categoriesData);
     } catch (err) {
       console.log(err);
-       setIsLoading(false);
+      setIsLoading(false);
     }
   }
 
@@ -110,7 +114,6 @@ const Appointments = () => {
     getTasksByDate(day.dateString);
   };
 
-  
   if (isLoading) {
     return <Spinner />;
   } else if (userData?.hasOwnProperty("profileCreated") === false) {
@@ -121,9 +124,9 @@ const Appointments = () => {
       <View style={styles.calendarContainer}>
         <Calendar markedDates={markedDate} onDayPress={onDayPress} />
         <View style={styles.activitiesContainer}>
-          <Text style={styles.subtitle}>
+          {/* <Text style={styles.subtitle}>
             Activities on {new Date(selectedDate).toLocaleDateString()}
-          </Text>
+          </Text> */}
           {activitiesForSelectedDate?.length > 0 ? (
             <FlatList
               data={activitiesForSelectedDate}
@@ -135,7 +138,7 @@ const Appointments = () => {
                   hideDelete={true}
                 />
               )}
-              keyExtractor={(item) => item.notificationId}
+              keyExtractor={(item) => item.createdOn}
             />
           ) : (
             <Text style={styles.dateText}>
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
   },
   calendarContainer: {
     flex: 1,
-    width: screenWidth,
+    width: Platform.OS !== "web" ? screenWidth : "100%",
     padding: 16,
   },
   taskContainer: {

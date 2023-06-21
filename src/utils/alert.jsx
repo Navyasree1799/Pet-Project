@@ -2,9 +2,9 @@ import { Alert, Platform } from "react-native"
 
 const alert = (title,value) => {
     if(Platform.OS!="web"){
-        Alert.alert(title,value)
+        Alert.alert(title,value||"")
     }else{
-        window.alert(title+"\n"+value)
+        window.alert(title+"\n"+value||"")
     }
     
 }

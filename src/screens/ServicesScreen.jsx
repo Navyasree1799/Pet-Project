@@ -64,14 +64,13 @@ const ServiceScreen = ({ navigation }) => {
     setVisible(!visible);
   };
 
-
   const handleCreate = async() => {
     setVisible(false)
     const user = await retrieveData();
     let updatedCategories = list
     updatedCategories = {
       ...list,
-      [newCategory]: {
+      [newCategory.toLowerCase()]: {
         title: newCategory,
         tasks: [],
         icon: "settings",
@@ -91,6 +90,25 @@ const ServiceScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.listView}>
         {Object.values(list)
+          .filter((item) => !item.hasOwnProperty("custom"))
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .map((item, i) => (
+            <ListItem
+              key={i}
+              bottomDivider
+              onPress={() => {
+                navigation.navigate("Task Manager", { category: item, list });
+              }}
+            >
+              <MaterialIcons name={item.icon} size={24} color="black" />
+              <ListItem.Content>
+                <ListItem.Title>{item.title}</ListItem.Title>
+              </ListItem.Content>
+              <MaterialIcons name="chevron-right" size={24} color="black" />
+            </ListItem>
+          ))}
+        {Object.values(list)
+          .filter((item) => item.hasOwnProperty("custom"))
           .sort((a, b) => a.title.localeCompare(b.title))
           .map((item, i) => (
             <ListItem
@@ -117,8 +135,8 @@ const ServiceScreen = ({ navigation }) => {
           onPress={() => setVisible(true)}
         />
       </View>
-      <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
-        <View style={{ width: screenWidth * 0.9 }}>
+      <Overlay  isVisible={visible} onBackdropPress={toggleOverlay}>
+        <View style={{ width: screenWidth * 0.9,maxWidth:600 }}>
           <Input
             value={newCategory}
             onChangeText={(text) => setNewCategory(text)}
@@ -160,7 +178,7 @@ const styles = StyleSheet.create({
 
   listView: {
     maxWidth: 600,
-    width: screenWidth*.9,
+    width: screenWidth * 0.9,
   },
   buttonContainer: {
     width: "100%",
@@ -171,6 +189,7 @@ const styles = StyleSheet.create({
   buttonTitleStyle: {
     fontWeight: "bold",
   },
+
 });
 
 export default ServiceScreen;

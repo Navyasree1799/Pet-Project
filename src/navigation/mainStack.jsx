@@ -35,7 +35,13 @@ export default function MainStack() {
         <Stack.Screen name="ProfileCreation" component={ProfileCreation} />
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="AboutDeveloper" component={AboutDeveloperScreen} />
-        <Stack.Screen name="PetFactsScreen" component={PetFactsScreen} />
+        <Stack.Screen
+          options={{
+            title: "Pet Facts",
+          }}
+          name="PetFactsScreen"
+          component={PetFactsScreen}
+        />
         <Stack.Screen
           options={{ headerShown: true }}
           name="Task Manager"

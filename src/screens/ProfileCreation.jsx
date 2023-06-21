@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  Platform,
 } from "react-native";
 import dog from "../../assets/dog.png";
 import cat from "../../assets/cat.png";
@@ -141,14 +142,23 @@ const ProfileCreation = ({ navigation }) => {
             thumbProps={{
               children: (
                 <View>
-                  <Icon
-                    name="heartbeat"
-                    type="font-awesome"
-                    size={20}
-                    reverse
-                    containerStyle={{ bottom: 20, right: 20 }}
-                    color="#f50"
-                  />
+                  {Platform.OS == "web" ? (
+                    <Ionicons
+                      name="heart-circle"
+                      style={{ bottom: 0, right: 20 }}
+                      size={30}
+                      color="#f50"
+                    />
+                  ) : (
+                    <Icon
+                      name="heartbeat"
+                      type="font-awesome"
+                      size={20}
+                      reverse
+                      containerStyle={{ bottom: 20, right: 20 }}
+                      color="#f50"
+                    />
+                  )}
                   <Text style={{ bottom: 30 }}>{pet.age}</Text>
                 </View>
               ),
@@ -434,9 +444,5 @@ const PetCard = ({ title, onPress, selected }) => {
     </TouchableOpacity>
   );
 };
-
-function validate(value) {
-  return isNaN(value) ? "Must be a number" : "";
-}
 
 export default ProfileCreation;

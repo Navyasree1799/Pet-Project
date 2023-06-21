@@ -1,7 +1,7 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { screenWidth } from "../utils/helpfulFunctions";
-import { formatTime } from "../utils/formatDate";
+import { formatDate, formatTime } from "../utils/formatDate";
 
 const Task = ({ obj, handlePress, handleDelete, hideDelete }) => {
   return (
@@ -11,7 +11,7 @@ const Task = ({ obj, handlePress, handleDelete, hideDelete }) => {
     >
       <View style={styles.alignParallel}>
         <Text style={styles.title}>{obj.title}</Text>
-        <Text style={styles.frequency}>{obj.frequency}</Text>
+        <Text style={styles.frequency}>{obj.frequency==="Daily"?"Daily":formatDate(obj.date)}</Text>
       </View>
 
       <View style={styles.alignParallel}>
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   taskContainer: {
     borderLeftWidth: 5,
     borderLeftColor: "rgba(111, 202, 186, 1)",
-    width: screenWidth * 0.9,
+    width: Platform.OS!=='web'?screenWidth * 0.9:450,
     maxWidth: 600,
     backgroundColor: "#FFFFFF",
     borderRadius: 10,

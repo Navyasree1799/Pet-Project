@@ -24,7 +24,7 @@ import { setCollectionData } from "../utils/firebaseFunctions";
 import { screenHeight, screenWidth, validateObj } from "../utils/helpfulFunctions";
 import DatePicker from "../components/DatePicker";
 
-Notifications.setNotificationHandler({
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
@@ -36,9 +36,9 @@ async function registerForPushNotificationsAsync() {
   let token;
 
   if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
+    await Notifications?.setNotificationChannelAsync("default", {
       name: "default",
-      importance: Notifications.AndroidImportance.MAX,
+      importance: Notifications?.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#FF231F7C",
     });
@@ -50,7 +50,7 @@ async function registerForPushNotificationsAsync() {
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {
       console.log("Asking for permission");
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = await Notifications?.requestPermissionsAsync();
       console.log("Permission: ", status);
       finalStatus = status;
     }
@@ -58,7 +58,7 @@ async function registerForPushNotificationsAsync() {
       alert("Failed to get push token for push notification!");
       return;
     }
-    token = (await Notifications.getExpoPushTokenAsync()).data;
+    token = (await Notifications?.getExpoPushTokenAsync()).data;
     console.log(token);
   } else {
     alert("Must use physical device for Push Notifications");
@@ -99,20 +99,20 @@ const TaskManager = ({ route }) => {
       );
 
     notificationListener.current =
-      Notifications.addNotificationReceivedListener((notification) => {
+      Notifications?.addNotificationReceivedListener((notification) => {
         setNotification(notification);
       });
 
     responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
+      Notifications?.addNotificationResponseReceivedListener((response) => {
         console.log(response);
       });
 
     return () => {
-      Notifications.removeNotificationSubscription(
+      Notifications?.removeNotificationSubscription(
         notificationListener.current
       );
-      Notifications.removeNotificationSubscription(responseListener.current);
+      Notifications?.removeNotificationSubscription(responseListener.current);
     };
   }, []);
 
@@ -133,6 +133,7 @@ const TaskManager = ({ route }) => {
   }
 
   function onChangeDate(t) {
+    console.log("OnDate changed",t)
     setShowDatePicker(false);
     setTaskObj({ ...taskObj, date: t.nativeEvent.timestamp });
   }
@@ -240,6 +241,7 @@ const TaskManager = ({ route }) => {
             setUpdate(null);
             setIsVisible(false);
           }}
+          containerStyle={{width:screenWidth,maxWidth:600,alignSelf:"center"}}
           modalProps={{}}
           isVisible={isVisible}
         >
@@ -325,13 +327,13 @@ const TaskManager = ({ route }) => {
             {update ? (
               <Button
                 onPress={()=>handleTaskUpdate()}
-                disabled={
-                  !validateObj(
-                    taskObj.frequency === "Daily"
-                      ? { title: taskObj.title, time: taskObj.time }
-                      : taskObj
-                  )
-                }
+                // disabled={
+                //   !validateObj(
+                //     taskObj.frequency === "Daily"
+                //       ? { title: taskObj.title, time: taskObj.time }
+                //       : taskObj
+                //   )
+                // }
                 buttonStyle={{
                   backgroundColor: "rgba(111, 202, 186, 1)",
                   borderRadius: 5,
@@ -377,7 +379,7 @@ const TaskManager = ({ route }) => {
 const styles = StyleSheet.create({
   empty: {
     flex: 1,
-    height:screenHeight*.9,
+    minHeight: screenHeight * .9,
     alignItems: "center",
     justifyContent:"center"
   },
@@ -408,21 +410,6 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-  },
-  taskContainer: {
-    borderLeftWidth: 5,
-    borderLeftColor: "rgba(111, 202, 186, 1)",
-    width: screenWidth * 0.9,
-    maxWidth: 600,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   time: {
     fontSize: 14,

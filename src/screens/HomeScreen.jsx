@@ -99,7 +99,7 @@ export default function HomeScreen({ navigation, route }) {
       if (task.frequency === "Daily") {
         return true;
       } else if (task.frequency === "Specific Date") {
-        return new Date(task.time).toDateString() === now;
+        return new Date(task.date).toDateString() === now;
       }
     });
 
@@ -187,7 +187,7 @@ export default function HomeScreen({ navigation, route }) {
                       hideDelete={true}
                     />
                   )}
-                  keyExtractor={(item) => item.notificationId}
+                  keyExtractor={(item) => item.createdOn}
                 />
               )}
               {todaysActivities?.length > 0 && !refresh && (
@@ -208,7 +208,7 @@ export default function HomeScreen({ navigation, route }) {
                       hideDelete={true}
                     />
                   )}
-                  keyExtractor={(item) => item.notificationId}
+                  keyExtractor={(item) => item.createdOn}
                 />
               )}
               {!todaysActivities?.length && (
@@ -220,10 +220,7 @@ export default function HomeScreen({ navigation, route }) {
             >
               <LinearGradient
                 colors={["#FD6585", "#FFD3A5"]}
-                style={[
-                  { ...styles.gradient },
-                  { marginTop: 15, flexDirection: "row" },
-                ]}
+                style={styles.findMoreBlock}
                 start={[0, 0]}
                 end={[1, 1]}
               >
@@ -254,7 +251,7 @@ export default function HomeScreen({ navigation, route }) {
               >
                 <LinearGradient
                   colors={["#7F7FD5", "#91EAE4"]}
-                  style={[{ ...styles.gradient }, { height: "100%" }]}
+                  style={[{ ...styles.gradient }]}
                   start={[0, 0]}
                   end={[1, 1]}
                 >
@@ -263,7 +260,7 @@ export default function HomeScreen({ navigation, route }) {
                   </Text>
                   <Image
                     source={require("../../assets/dogFact.png")}
-                    style={{ width: 150, height: 200, resizeMode: "contain" }}
+                    style={{ width: 150, height: 150, resizeMode: "contain" }}
                   />
                 </LinearGradient>
               </TouchableOpacity>
@@ -285,7 +282,7 @@ export default function HomeScreen({ navigation, route }) {
                   </Text>
                   <Image
                     source={require("../../assets/catFact.png")}
-                    style={{ width: 150, height: 200, resizeMode: "contain" }}
+                    style={{ width: 150, height: 150, resizeMode: "contain" }}
                   />
                 </LinearGradient>
               </TouchableOpacity>
@@ -309,8 +306,17 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    minHeight: screenHeight,
     paddingHorizontal: 10,
     backgroundColor: "#fff",
+  },
+  findMoreBlock: {
+    borderRadius: 8,
+    padding: 16,
+    maxHeight: screenHeight * 0.3,
+    marginTop: 15,
+    flexDirection: "row",
+    alignItems: "center",
   },
   button: {
     marginTop: 10,
@@ -337,21 +343,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-
-    // color: "#FFF",
-
-    // fontSize: 22,
-    // fontWeight: "bold",
-    // paddingHorizontal: 10,
-    // backgroundColor: "grey",
-    // borderRadius: 5,
-    // padding: 20,
-    // color: "white",
-    // shadowColor: "#000000",
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 4,
-    // elevation: 2,
   },
   para: {
     color: "grey",
@@ -364,6 +355,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
     color: "white",
+    paddingHorizontal: 10,
   },
   buttonContainer: {
     width: "100%",

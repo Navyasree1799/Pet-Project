@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, FlatList } from "react-native";
-import { Card, Text } from "@rneui/themed";
+import { Text } from "@rneui/themed";
 import dogFacts from "../utils/dogFacts.json";
 import catFacts from "../utils/catFacts.json";
 import { useEffect } from "react";
